@@ -2,18 +2,18 @@ import React from "react";
 import "./Timer.css";
 import Button from "../Button/Button";
 
+import { connect } from "react-redux";
+import {
+  COUNTDOWN,
+  COUNTDOWNATZERO,
+  DECREMENT,
+  INCREMENT,
+  RESET,
+} from "../../Redux/actions";
+
 class Timer extends React.Component {
   constructor(props) {
     super(props);
-
-    this.state = {
-      time: {
-        h: 0,
-        m: 0,
-        s: 0,
-      },
-      seconds: 0,
-    };
 
     this.timer = 0;
   }
@@ -31,69 +31,41 @@ class Timer extends React.Component {
   };
 
   incTimer = () => {
-    if (this.state.seconds >= 0) {
-      this.setState((prevState) => {
-        return {
-          seconds: prevState.seconds + 60,
-          time: this.secondsToTime(prevState.seconds + 60),
-        };
-      });
+    if (this.props.seconds >= 0) {
+      this.props.onIncrement(this.secondsToTime);
     }
   };
 
   decTimer = () => {
-    if (this.state.seconds >= 0) {
-      this.setState((prevState) => {
-        return {
-          seconds: prevState.seconds - 60,
-          time: this.secondsToTime(prevState.seconds - 60),
-        };
-      });
+    if (this.props.seconds > 0 && this.timer === 0) {
+      this.props.onDecrement(this.secondsToTime);
     }
   };
 
   startTimer = () => {
-    if (this.state.seconds > 0 && this.timer === 0) {
+    if (this.props.seconds > 0 && this.timer === 0) {
       this.timer = setInterval(this.countDown, 1000);
     }
   };
 
   countDown = () => {
-    let sec = this.state.seconds - 1;
-    this.setState({
-      time: this.secondsToTime(sec),
-      seconds: sec,
-    });
+    this.props.onCountDown(this.secondsToTime);
 
-    if (sec === 0) {
+    if (this.props.seconds === 0) {
       clearInterval(this.timer);
-      this.setState({
-        time: {
-          h: 0,
-          m: 0,
-          s: 0,
-        },
-        seconds: 0,
-      });
+      this.props.onCountDownAtZero();
     }
   };
 
   stopTimer = () => {
-    if (this.state.seconds !== 0 && this.timer !== 0) {
+    if (this.props.seconds !== 0 && this.timer !== 0) {
       clearInterval(this.timer);
       this.timer = 0;
     }
   };
 
   resetTimer = () => {
-    this.setState({
-      time: {
-        h: 0,
-        m: 0,
-        s: 0,
-      },
-      seconds: 0,
-    });
+    this.props.onReset();
 
     if (this.timer !== 0) {
       clearInterval(this.timer);
@@ -117,7 +89,7 @@ class Timer extends React.Component {
   };
 
   render() {
-    let { h, m, s } = this.timeFormatter(this.state.time);
+    let { h, m, s } = this.timeFormatter(this.props.time);
 
     return (
       <React.Fragment>
@@ -136,4 +108,21 @@ class Timer extends React.Component {
   }
 }
 
-export default Timer;
+const mapStateToProps = (state) => {
+  return {
+    time: state.time,
+    seconds: state.seconds,
+  };
+};
+
+const mapDispatchToProps = (dispatch) => {
+  return {
+    onIncrement: (fn) => dispatch({ type: INCREMENT, secToTime: fn }),
+    onDecrement: (fn) => dispatch({ type: DECREMENT, secToTime: fn }),
+    onCountDown: (fn) => dispatch({ type: COUNTDOWN, secToTime: fn }),
+    onCountDownAtZero: () => dispatch({ type: COUNTDOWNATZERO }),
+    onReset: () => dispatch({ type: RESET }),
+  };
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(Timer);
